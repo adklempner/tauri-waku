@@ -9,13 +9,16 @@
   import { goto } from "$app/navigation";
   let devicePubKeyBase64: string | null = $state(null);
   let html5QrcodeScanner: Html5QrcodeScanner | null = $state(null);
+  let isPairing: boolean = $state(false);
 
   function onScanSuccess(
     decodedText: string,
     decodedResult: Html5QrcodeResult
   ) {
-    // console.log(`Code matched = ${decodedText}`, decodedResult);
+    console.log(`Code matched = ${decodedText}`, decodedResult);
     devicePubKeyBase64 = decodedText;
+    html5QrcodeScanner?.pause();
+    pairNewDevice();
   }
 
   function onScanFailure(error: string) {
@@ -28,6 +31,7 @@
     if (!devicePubKeyBase64) {
       return;
     }
+    isPairing = true;
     const success = await tokenStore.pairNewDevice(devicePubKeyBase64);
     if (!success) {
       goto("/");
@@ -65,19 +69,22 @@
   });
 </script>
 
-<div
-  class="flex flex-col items-center p-6 max-w-md mx-auto bg-white rounded-lg shadow-md"
->
-  <h1 class="text-2xl font-bold text-gray-800 mb-6">Scan Code</h1>
+<div class="flex flex-col items-center">
   {#if !devicePubKeyBase64}
     <div id="reader"></div>
   {:else}
-    <button 
-      onclick={pairNewDevice}
-      class="py-2 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
-    >
-      Register Device
-    </button>
+    <div class="flex flex-col items-center justify-center mt-4">
+      <div class="w-32 h-32 overflow-hidden flex items-center justify-center perspective-500">
+        <img 
+          src="/waku-mark-primary-black.svg" 
+          alt="Waku Logo" 
+          class="w-full h-full transform scale-125 animate-spin-y" 
+        />
+      </div>
+      <p class="text-gray-600 mt-4 text-lg font-medium">
+        <span class="animate-dots">Pairing . . .</span>
+      </p>
+    </div>
   {/if}
 </div>
 
@@ -139,6 +146,49 @@
     background-color: #2563eb !important;
   }
 
+  :global(#html5-qrcode-anchor-scan-type-change) {
+    text-decoration: none !important;
+    color: #2563eb !important;
+    font-weight: 500 !important;
+    transition: color 0.2s !important;
+  }
+
+  :global(#html5-qrcode-anchor-scan-type-change:hover) {
+    color: #1d4ed8 !important;
+  }
+
+  /* Image File Selection Styling */
+  :global(#html5-qrcode-button-file-selection) {
+    background-color: #3b82f6 !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.375rem !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  :global(#html5-qrcode-button-file-selection:hover) {
+    background-color: #2563eb !important;
+  }
+
+  :global(#reader__file_selection) {
+    border: 2px dashed #e5e7eb !important;
+    border-radius: 0.5rem !important;
+    padding: 1.5rem !important;
+    margin-top: 1rem !important;
+    width: 100% !important;
+    max-width: 400px !important;
+  }
+
+  :global(#reader__file_selection div) {
+    color: #6b7280 !important;
+    font-size: 0.875rem !important;
+    margin-top: 0.5rem !important;
+  }
+
   :global(#qr-shaded-region) {
     border-color: rgba(0, 0, 0, 0.4) !important;
   }
@@ -153,5 +203,37 @@
   :global(#reader__scan_region video) {
     max-width: 100% !important;
     border-radius: 0.25rem !important;
+  }
+  
+  .perspective-500 {
+    perspective: 500px;
+  }
+  
+  @keyframes spin-y {
+    0% {
+      transform: scale(1.25) rotateY(0deg);
+    }
+    50% {
+      transform: scale(1.25) rotateY(180deg);
+    }
+    100% {
+      transform: scale(1.25) rotateY(360deg);
+    }
+  }
+  
+  @keyframes dotAnimation {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+  }
+  
+  .animate-dots {
+    animation: dotAnimation 1.5s infinite ease-in-out;
+    display: inline-block;
+  }
+  
+  .animate-spin-y {
+    animation: spin-y 10s infinite linear;
+    transform-style: preserve-3d;
   }
 </style>

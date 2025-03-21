@@ -6,6 +6,7 @@
   import { MonitorSmartphone, Unplug } from "@lucide/svelte";
   import { wakuConnection } from "$lib/connectionUtils";
   import WakuAwareButton from "./WakuAwareButton.svelte";
+  import CallToAction from "./CallToAction.svelte";
   
   const { publicKeyBase64: propPublicKey = undefined } = $props<{ publicKeyBase64?: string }>();
   
@@ -62,9 +63,7 @@
   }
 </script>
 
-<div class="max-w-md mx-auto p-8 my-12 bg-white rounded-lg shadow-md absolute top-0 left-0 right-0">
-  <h1 class="text-2xl font-bold text-gray-800 mb-8 tracking-tight text-center">Add Device</h1>
-  
+<div>
   {#if !storeReady}
     <div class="flex justify-center items-center h-40" in:fade={{ duration: 200 }}>
       <p class="text-gray-600 animate-pulse text-lg">Loading...</p>
@@ -100,17 +99,18 @@
         </div>
       </div>
     {:else}
-      <div class="flex flex-col items-center" in:fade={{ duration: 300 }}>
+      <div class="text-center mb-4" in:fade={{ duration: 300 }}>
         <p class="text-gray-700 mb-4 text-center">Scan this QR code with your other device</p>
         <canvas id="qrcode" class="mb-6 rounded-md shadow-md mx-auto"></canvas>
         <p class="text-gray-600 text-sm mb-2">Device name: <span class="font-medium">{deviceName}</span></p>
       </div>
     {/if}
     
-    <div class="mt-6 pt-6 border-t border-gray-200 text-center w-full">
-      <p class="text-gray-600 mb-2">Trying to scan a QR code?</p>
-      <a href="/scan" class="text-blue-600 hover:text-blue-800 font-medium">Scan Code →</a>
-    </div>
+    <CallToAction 
+      message="Trying to scan a QR code?" 
+      linkText="Scan Code" 
+      linkHref="/scan" 
+    />
   {/if}
 </div>
 
