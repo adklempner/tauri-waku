@@ -28,7 +28,7 @@
         <img 
           src="/waku-mark-primary-black.svg" 
           alt="Waku Logo" 
-          class="w-full h-full transform scale-125 animate-spin-y" 
+          class="w-full h-full transform scale-125 {$connectionState.status === 'connecting' || $connectionState.status === 'waiting_for_peers' || $connectionState.status === 'connected' ? 'animate-spin-y' : ''}" 
         />
       </div>
     </div>
