@@ -1,67 +1,82 @@
 <script lang="ts">
-	// import '../app.css';
-	import Header from '$lib/components/Header.svelte';
-	import ConnectionButton from '$lib/components/ConnectionButton.svelte';
-	// import ActionModule from '$lib/components/ActionModule.svelte';
-	import { connectionState, sendWithLightPush } from '$lib/waku.svelte';
-
-	async function handleSend() {
-		const result = await sendWithLightPush(new Uint8Array([1, 2, 3]));
-		console.log(result);
-	}
+  import ConnectionButton from "$lib/components/ConnectionButton.svelte";
+  import { connectionState } from "$lib/waku.svelte";
+  import DeviceList from "$lib/components/DeviceList.svelte";
+  import { fade } from "svelte/transition";
 </script>
 
-<Header />
+<div class="relative min-h-screen">
+  {#if $connectionState.status !== "connected"}
+    <div 
+      class="max-w-md mx-auto p-8 my-12 bg-white rounded-lg shadow-md absolute top-0 left-0 right-0" 
+      in:fade={{ duration: 300 }}
+      out:fade={{ duration: 300 }}
+    >
+      <h1
+        class="text-3xl font-bold text-gray-800 tracking-tight text-center"
+      >
+        Waku Device Pairing
+      </h1>
+      <div class="flex justify-center">
+        <div class="w-64 h-64 overflow-hidden flex items-center justify-center perspective-500">
+          <img 
+            src="/waku-mark-primary-black.svg" 
+            alt="Waku Logo" 
+            class="w-full h-full transform scale-125 animate-spin-y" 
+          />
+        </div>
+      </div>
+      <div class="pt-6 border-t border-gray-200 text-center w-full">
+        <p class="text-gray-600 mb-4">
+          Connect to the Waku network to get started
+        </p>
+        <div class="w-full flex justify-center">
+          <ConnectionButton size="large" />
+        </div>
+      </div>
+    </div>
+  {:else}
+    <div 
+      class="max-w-2xl mx-auto p-6 my-12 bg-white rounded-lg shadow-md absolute top-0 left-0 right-0" 
+      in:fade={{ duration: 300, delay: 300 }}
+      out:fade={{ duration: 300 }}
+    >
+      <h1
+        class="text-2xl font-bold text-gray-800 mb-8 tracking-tight text-center"
+      >
+        Your Devices
+      </h1>
+      <DeviceList />
 
-<div class="content">
-	{#if connectionState.status !== 'connected'}
-		<div class="connection-container">
-			<p>Connect to the Waku network to start using the demo</p>
-			<div class="large-connect-button">
-				<ConnectionButton size="large" />
-			</div>
-		</div>
-	{:else}
-		<div class="action-container">
-			<p> Connected to the Waku network</p>
-		</div>
-		<button onclick={handleSend}>Send</button>
-	{/if}
+      <div class="mt-6 pt-6 border-t border-gray-200 text-center w-full">
+        <p class="text-gray-600 mb-2">Want to add a new device?</p>
+        <a href="/pairing" class="text-blue-600 hover:text-blue-800 font-medium"
+          >Add Device →</a
+        >
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
-	.content {
-		max-width: 1200px;
-		margin: 2rem auto;
-		padding: 0 1rem;
-		text-align: center;
-	}
-
-	h1 {
-		font-size: 2rem;
-		color: #111827;
-		margin-bottom: 1rem;
-	}
-
-	p {
-		font-size: 1.1rem;
-		line-height: 1.6;
-		color: #4B5563;
-		margin-bottom: 2rem;
-	}
-
-	.connection-container, .action-container {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		margin-top: 2rem;
-	}
-
-	.action-container {
-		width: 100%;
-	}
-
-	.large-connect-button {
-		margin-top: 1rem;
-	}
+  .perspective-500 {
+    perspective: 500px;
+  }
+  
+  @keyframes spin-y {
+    0% {
+      transform: scale(1.25) rotateY(0deg);
+    }
+    50% {
+      transform: scale(1.25) rotateY(180deg);
+    }
+    100% {
+      transform: scale(1.25) rotateY(360deg);
+    }
+  }
+  
+  .animate-spin-y {
+    animation: spin-y 10s infinite linear;
+    transform-style: preserve-3d;
+  }
 </style>
