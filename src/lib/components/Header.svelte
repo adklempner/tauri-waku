@@ -1,13 +1,16 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { connectionState } from "../waku.svelte";
+  import { connectionState, startWaku } from "../waku.svelte";
   import { HealthStatus } from "@waku/sdk";
   import ConnectionButton from "./ConnectionButton.svelte";
   import { health } from "../waku.svelte";
   import { page } from '$app/state';
+  import { wakuConnection } from "../connectionUtils";
 
   let healthStatus = $state(HealthStatus.Unhealthy);
   let healthCheckInterval: NodeJS.Timeout | undefined;
+  let isHomePage = $state(false);
+  let shouldShowConnectButton = $state(false);
 
   function startHealthCheck() {
     healthStatus = health();
@@ -70,13 +73,58 @@
         return "Node is unhealthy";
     }
   }
+
+  async function handleConnect() {
+    try {
+      await startWaku();
+    } catch (error) {
+      console.error("Connection error in header:", error);
+    }
+  }
+
+  // Check if current route is not the home page
   $effect(() => {
-    console.log("heaeder: " + page.url.pathname);
+    console.log("header: " + page.url.pathname);
+    isHomePage = page.url.pathname === "/";
+    updateButtonVisibility();
   });
+  
+  $effect(() => {
+    updateButtonVisibility();
+  });
+  
+  function updateButtonVisibility() {
+    shouldShowConnectButton = !isHomePage && $connectionState.status !== "connected";
+  }
 </script>
 
 <div class="status-container">
   <div class="connection-status">
+    {#if shouldShowConnectButton}
+      <div class="header-connection-ui">
+        {#if $connectionState.status === "disconnected"}
+          <button
+            on:click={handleConnect}
+            class="connect-button px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors duration-200 mr-2"
+          >
+            Connect
+          </button>
+        {:else if $connectionState.status === "connecting"}
+          <span class="status animated-dots">Starting node</span>
+        {:else if $connectionState.status === "waiting_for_peers"}
+          <span class="status animated-dots">Waiting for peers</span>
+        {:else if $connectionState.status === "error"}
+          <div class="error-container">
+            <button 
+              on:click={handleConnect}
+              class="connect-button px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors duration-200 mr-2"
+            >
+              Retry
+            </button>
+          </div>
+        {/if}
+      </div>
+    {/if}
     <div class="status-wrapper">
       <div
         class="health-indicator"
@@ -155,6 +203,43 @@
   .health-indicator:hover .tooltip {
     visibility: visible;
     animation: fadeIn 0.2s ease-in-out;
+  }
+
+  .header-connection-ui {
+    display: flex;
+    align-items: center;
+  }
+
+  .connect-button {
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .status {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 4px;
+    background-color: #e5e7eb;
+    color: #374151;
+    white-space: nowrap;
+    margin-right: 0.5rem;
+  }
+
+  .error-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .animated-dots {
+    animation: dotAnimation 1.5s infinite;
+  }
+  
+  @keyframes dotAnimation {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
   }
 
   @keyframes fadeIn {

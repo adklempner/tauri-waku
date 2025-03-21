@@ -4,6 +4,8 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import { MonitorSmartphone, Unplug } from "@lucide/svelte";
+  import { wakuConnection } from "$lib/connectionUtils";
+  import WakuAwareButton from "./WakuAwareButton.svelte";
   
   const { publicKeyBase64: propPublicKey = undefined } = $props<{ publicKeyBase64?: string }>();
   
@@ -61,7 +63,7 @@
 </script>
 
 <div class="max-w-md mx-auto p-8 my-12 bg-white rounded-lg shadow-md absolute top-0 left-0 right-0">
-  <h1 class="text-3xl font-bold text-gray-800 mb-8 tracking-tight text-center">Add Device</h1>
+  <h1 class="text-2xl font-bold text-gray-800 mb-8 tracking-tight text-center">Add Device</h1>
   
   {#if !storeReady}
     <div class="flex justify-center items-center h-40" in:fade={{ duration: 200 }}>
@@ -85,12 +87,16 @@
             bind:value={deviceName} 
             class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <button 
-            onclick={handleAddDevice} 
-            class="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
-          >
-            Add Device
-          </button>
+          <WakuAwareButton
+            onClick={handleAddDevice}
+            label="Add Device"
+            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+          />
+          {#if !$wakuConnection.isConnected}
+            <p class="text-amber-600 text-sm text-center">
+              {$wakuConnection.isConnecting ? 'Connecting to Waku network...' : 'Waku node is not connected'}
+            </p>
+          {/if}
         </div>
       </div>
     {:else}
