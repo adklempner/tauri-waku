@@ -5,9 +5,12 @@
   import { fade } from "svelte/transition";
   import { MonitorSmartphone, Unplug } from "@lucide/svelte";
   
+  const { publicKeyBase64: propPublicKey = undefined } = $props<{ publicKeyBase64?: string }>();
+  
   let storeReady = $state(false);
   let challengeReady = $state(false);
   let deviceName = $state("my-device");
+  let localPublicKey = $state(propPublicKey);
   
   onMount(async () => {
     tokenStore.ready.subscribe(async (ready) => {
@@ -17,26 +20,43 @@
       }
       storeReady = true;
     });
+
+    // If publicKeyBase64 is provided as a prop, show QR code immediately
+    if (localPublicKey) {
+      challengeReady = true;
+      setTimeout(generateQRCode, 0);
+    }
   });
 
+  function generateQRCode() {
+    const qr = new QRious({
+      element: document.getElementById("qrcode") as HTMLCanvasElement,
+      size: 256,
+      background: "#ffffff",
+      foreground: "#000000",
+      value: localPublicKey as string,
+    });
+    
+    // Add public key as data attribute for pairing verification
+    const qrElement = document.getElementById("qrcode");
+    if (qrElement) {
+      qrElement.setAttribute('data-public-key', localPublicKey as string);
+    }
+    
+    console.log(qr);
+  }
+
   async function handleAddDevice() {
-    const publicKeyBase64 = await tokenStore.startPairing();
+    // Only get a new key if one wasn't provided as a prop
+    if (!localPublicKey) {
+      localPublicKey = await tokenStore.startPairing();
+    }
     
     // First set challengeReady to true so the canvas element gets rendered
     challengeReady = true;
     
     // Wait for the next tick to ensure DOM is updated
-    setTimeout(() => {
-      const qr = new QRious({
-        element: document.getElementById("qrcode") as HTMLCanvasElement,
-        size: 256,
-        background: "#ffffff",
-        foreground: "#000000",
-        value: publicKeyBase64,
-      });
-      
-      console.log(qr);
-    }, 0);
+    setTimeout(generateQRCode, 0);
   }
 </script>
 

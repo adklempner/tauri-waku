@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button/index.js";
-
   import { liveQuery } from "dexie";
   import { tokenStore } from "$lib/credential/TokenStore";
   import { onMount } from "svelte";
@@ -47,6 +45,10 @@
       });
     })
   );
+
+  function navigateToPairingQR(deviceId: string) {
+    goto(`/pairing?key=${encodeURIComponent(deviceId)}`);
+  }
 </script>
 
 {#if $devices?.length > 0}
@@ -98,7 +100,10 @@
                   Retry
                 </button>
               {:else if device.status === "Awaiting Scan"}
-                <button class="py-1 px-3 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors">
+                <button 
+                  class="py-1 px-3 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
+                  on:click={() => navigateToPairingQR(device.id)}
+                >
                   Show QR
                 </button>
               {/if}
@@ -113,8 +118,5 @@
     <p class="text-gray-500 mb-4">
       No devices found, add your first device below.
     </p>
-    <a href="/pairing" class="py-2 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors duration-200">
-      Add Device
-    </a>
   </div>
 {/if}

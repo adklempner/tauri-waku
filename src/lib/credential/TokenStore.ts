@@ -73,7 +73,12 @@ class TokenStore {
 
   // Typically called from mobile after scanning the QR code from desktop
   // to generate a shared secret and store the credentials in the database
-  async pairNewDevice(devicePubKeyBase64: string) {
+  async pairNewDevice(devicePubKeyBase64: string) : Promise<boolean> {
+    const credential = await this.db.credentials.get(devicePubKeyBase64);
+    if (credential) {
+      console.log("Device already pairing");
+      return false;
+    }
     const { keyPair, sharedSecret, devicePublicKey, publicKeyBase64 } = createKeyPairAndSharedSecret(devicePubKeyBase64);
     await this.db.credentials.put({
       privateKey: keyPair.privateKey,
@@ -86,6 +91,7 @@ class TokenStore {
       request: true,
     }, publicKeyBase64);
     await this.db.myKeyFromDeviceKey.put(publicKeyBase64, devicePubKeyBase64);
+    return true;
   }
 
   async getPairing(publicKeyBase64: string): Promise<Credential | null> {
@@ -110,11 +116,15 @@ class TokenStore {
   }
 
   // Typically called by desktop after receiving a device pairing message
-  async receiveDevicePairing(encryptedMessage: {nonce: Uint8Array, ciphertext: Uint8Array}, scannedPublicKeyBase64: string, senderPublicKey: Uint8Array) {
+  async receiveDevicePairing(encryptedMessage: {nonce: Uint8Array, ciphertext: Uint8Array}, scannedPublicKeyBase64: string, senderPublicKey: Uint8Array) : Promise<boolean> {
     // Did we actually initiate this pairing?
     const credential = await this.db.credentials.get(scannedPublicKeyBase64);
     if (!credential) {
       throw new Error("Credential not found");
+    }
+    if (credential.paired) {
+      throw new Error("Device already paired");
+      return false;
     }
     const myDeviceKeyBase64 = encodeBase64(credential.publicKey);
     credential.sharedSecret = deriveSharedSecret(credential.privateKey, senderPublicKey);
@@ -126,6 +136,7 @@ class TokenStore {
     credential.paired = true;
     await this.db.credentials.put(credential, myDeviceKeyBase64);
     await this.db.myKeyFromDeviceKey.put(myDeviceKeyBase64, scannedPublicKeyBase64);
+    return true;
   }
 }
 

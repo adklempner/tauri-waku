@@ -20,9 +20,9 @@
       class="text-blue-600 hover:text-blue-800 font-medium">Connect →</button
     >
   {:else if $connectionState.status === "connecting"}
-    <span class="status">Starting node...</span>
+    <span class="status animated-dots">Starting node . . .</span>
   {:else if $connectionState.status === "waiting_for_peers"}
-    <span class="status">Waiting for peers...</span>
+    <span class="status animated-dots">Waiting for peers . . .</span>
   {:else if $connectionState.status === "connected"}
     <span class="status connected">Connected</span>
   {:else if $connectionState.status === "error"}
@@ -96,5 +96,15 @@
   .connection-ui.large .error {
     font-size: 1rem;
     max-width: 600px;
+  }
+
+  .animated-dots {
+    animation: dotAnimation 1.5s infinite;
+  }
+  
+  @keyframes dotAnimation {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
   }
 </style>

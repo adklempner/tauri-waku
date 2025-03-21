@@ -8,7 +8,7 @@
 <div class="relative min-h-screen">
   {#if $connectionState.status !== "connected"}
     <div 
-      class="max-w-md mx-auto p-8 my-12 bg-white rounded-lg shadow-md absolute top-0 left-0 right-0" 
+      class="max-w-md mx-auto p-8 bg-white rounded-lg sm:shadow-md absolute top-0 left-0 right-0 sm:my-12 my-4" 
       in:fade={{ duration: 300 }}
       out:fade={{ duration: 300 }}
     >
@@ -26,7 +26,7 @@
           />
         </div>
       </div>
-      <div class="pt-6 border-t border-gray-200 text-center w-full">
+      <div class="pt-6 border-t border-gray-200 text-center w-full sm:mt-0 mt-10">
         <p class="text-gray-600 mb-4">
           Connect to the Waku network to get started
         </p>
@@ -37,7 +37,7 @@
     </div>
   {:else}
     <div 
-      class="max-w-2xl mx-auto p-6 my-12 bg-white rounded-lg shadow-md absolute top-0 left-0 right-0" 
+      class="max-w-2xl mx-auto sm:p-6 px-4 sm:my-12 my-8 bg-white rounded-lg sm:shadow-md absolute top-0 left-0 right-0" 
       in:fade={{ duration: 300, delay: 300 }}
       out:fade={{ duration: 300 }}
     >

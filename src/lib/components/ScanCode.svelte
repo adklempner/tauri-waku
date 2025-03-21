@@ -6,6 +6,7 @@
   import { Topic, type DevicePairingMessage } from "$lib/waku/topics";
   import { wakuNode } from "$lib/waku.svelte";
   import { encodeBase64 } from "@oslojs/encoding";
+  import { goto } from "$app/navigation";
   let devicePubKeyBase64: string | null = $state(null);
   let html5QrcodeScanner: Html5QrcodeScanner | null = $state(null);
 
@@ -27,7 +28,11 @@
     if (!devicePubKeyBase64) {
       return;
     }
-    await tokenStore.pairNewDevice(devicePubKeyBase64);
+    const success = await tokenStore.pairNewDevice(devicePubKeyBase64);
+    if (!success) {
+      goto("/");
+      return;
+    }
     const {
       myKey,
       encryptedMessage: { nonce, ciphertext },

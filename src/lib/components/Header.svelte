@@ -4,6 +4,7 @@
   import { HealthStatus } from "@waku/sdk";
   import ConnectionButton from "./ConnectionButton.svelte";
   import { health } from "../waku.svelte";
+  import { page } from '$app/state';
 
   let healthStatus = $state(HealthStatus.Unhealthy);
   let healthCheckInterval: NodeJS.Timeout | undefined;
@@ -69,6 +70,9 @@
         return "Node is unhealthy";
     }
   }
+  $effect(() => {
+    console.log("heaeder: " + page.url.pathname);
+  });
 </script>
 
 <div class="status-container">
