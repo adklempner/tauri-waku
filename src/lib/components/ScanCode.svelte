@@ -4,12 +4,26 @@
   import { tokenStore } from "$lib/credential/TokenStore";
   import { outbox } from "$lib/credential/Outbox";
   import { Topic, type DevicePairingMessage } from "$lib/waku/topics";
-  import { wakuNode } from "$lib/waku.svelte";
+  import { wakuNode, pairingState } from "$lib/waku.svelte";
   import { encodeBase64 } from "@oslojs/encoding";
   import { goto } from "$app/navigation";
+
   let devicePubKeyBase64: string | null = $state(null);
   let html5QrcodeScanner: Html5QrcodeScanner | null = $state(null);
   let isPairing: boolean = $state(false);
+  let isAwaitingResponse: boolean = $state(false);
+
+  // Subscribe to the pairingState store 
+  const unsubscribe = pairingState.subscribe(state => {
+    isAwaitingResponse = state.awaitingResponse && state.devicePubKey === devicePubKeyBase64;
+  });
+
+  // Clean up subscription when component is destroyed
+  onMount(() => {
+    return () => {
+      unsubscribe();
+    };
+  });
 
   function onScanSuccess(
     decodedText: string,
@@ -44,20 +58,24 @@
       devicePubKeyBase64,
       devicePubKeyBase64
     );
-    // above needs to be added to outbox and sent over waku
-    const ackId = await outbox.add(Topic.DevicePairing, {
-      senderPublicKey: myKey,
-      nonce,
-      ciphertext,
-    });
-    const message: DevicePairingMessage = {
+    // add message to outbox for tracking and potential rebroadcasting
+    const message: Partial<DevicePairingMessage> = {
       senderPublicKeyBase64: encodeBase64(myKey),
       nonceBase64: encodeBase64(nonce),
       ciphertextBase64: encodeBase64(ciphertext),
-      ackId,
       scannedPublicKeyBase64: devicePubKeyBase64,
     };
-    await wakuNode.send(Topic.DevicePairing, message);
+    const ackId = await outbox.add(Topic.DevicePairing, message);
+    message.ackId = ackId;
+    
+    try {
+      // Send the message immediately, but rely on the outbox for reliability
+      await wakuNode.send(Topic.DevicePairing, message);
+      console.log(`Sent pairing request with ID ${ackId}`);
+    } catch (error) {
+      console.error("Failed to send initial pairing request:", error);
+      // The message is already in the outbox and will be retried automatically
+    }
   }
   onMount(() => {
     html5QrcodeScanner = new Html5QrcodeScanner(
@@ -82,7 +100,13 @@
         />
       </div>
       <p class="text-gray-600 mt-4 text-lg font-medium">
-        <span class="animate-dots">Pairing . . .</span>
+        <span class="animate-dots">
+          {#if isAwaitingResponse}
+            Awaiting Response . . .
+          {:else}
+            Sending Pair Request . . .
+          {/if}
+        </span>
       </p>
     </div>
   {/if}

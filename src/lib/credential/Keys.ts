@@ -53,10 +53,6 @@ export function encrypt(data: string, sharedSecret: Uint8Array) {
 }
 
 export function decrypt(nonce: Uint8Array, ciphertext: Uint8Array, sharedSecret: Uint8Array) {
-  console.log("decrypting");
-  console.log(nonce);
-  console.log(ciphertext);
-  console.log(sharedSecret);
   const aes = gcm(sharedSecret, nonce);
   return new Uint8Array(aes.decrypt(ciphertext));
 }

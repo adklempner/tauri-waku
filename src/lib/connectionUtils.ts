@@ -6,7 +6,7 @@ export const wakuConnection = derived(
   connectionState,
   ($connectionState) => {
     const isConnected = $connectionState.status === 'connected';
-    const isConnecting = $connectionState.status === 'connecting' || $connectionState.status === 'waiting_for_peers';
+    const isConnecting = $connectionState.status === 'connecting' || $connectionState.status === 'waiting_for_peers' || $connectionState.status === 'setting_up_subscriptions';
     const hasError = $connectionState.status === 'error';
     const errorMessage = $connectionState.error;
 

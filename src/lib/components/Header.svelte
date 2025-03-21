@@ -113,6 +113,8 @@
           <span class="status animated-dots">Starting node</span>
         {:else if $connectionState.status === "waiting_for_peers"}
           <span class="status animated-dots">Waiting for peers</span>
+        {:else if $connectionState.status === "setting_up_subscriptions"}
+          <span class="status animated-dots">Setting up subscriptions</span>
         {:else if $connectionState.status === "error"}
           <div class="error-container">
             <button 

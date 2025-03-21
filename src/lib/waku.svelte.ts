@@ -10,11 +10,23 @@ import {
 import { tokenStore } from "./credential/TokenStore";
 import { topics, Topic, type DevicePairingMessage } from "./waku/topics";
 import { decodeBase64 } from "@oslojs/encoding";
-import { writable } from "svelte/store";
+import { writable, type Writable } from "svelte/store";
 import { toast } from "svelte-sonner";
 import { goto } from "$app/navigation";
+import { setupSubscriptions } from "./waku/filter.svelte";
+// Define the pairing state type
+export interface PairingState {
+  awaitingResponse: boolean;
+  devicePubKey: string | null;
+}
 
-class WakuNode {
+// Create a pairing state store
+export const pairingState: Writable<PairingState> = writable({
+  awaitingResponse: false,
+  devicePubKey: null,
+});
+
+export class WakuNode {
   public node = $state<LightNode | undefined>(undefined);
 
   async setNode(node: LightNode) {
@@ -46,6 +58,7 @@ export const connectionState = writable({
     | "disconnected"
     | "connecting"
     | "waiting_for_peers"
+    | "setting_up_subscriptions"
     | "connected",
   error: null as string | null,
 });
@@ -70,101 +83,59 @@ export async function startWaku(): Promise<void> {
     });
 
     await node.start();
-    await node.dial("/dns4/waku-test.bloxy.one/tcp/8095/wss/p2p/16Uiu2HAmSZbDB7CusdRhgkD81VssRjQV5ZH13FbzCGcdnbbh6VwZ");
-    wakuNode.setNode(node);
+    await wakuNode.setNode(node);
+    
+    // Connect to peers
+    await node.dial(
+      "/dns4/waku-test.bloxy.one/tcp/8095/wss/p2p/16Uiu2HAmSZbDB7CusdRhgkD81VssRjQV5ZH13FbzCGcdnbbh6VwZ"
+    );
     (window as any).waku = node;
     connectionState.update((state) => ({
       ...state,
       status: "waiting_for_peers",
     }));
 
+    // Start the periodic rebroadcasting of outbox messages
+    const { outbox } = await import('./credential/Outbox');
+    outbox.startPeriodicRebroadcast();
+    
+    // Add cleanup for when the app is closed
+    window.addEventListener('beforeunload', () => {
+      outbox.stopPeriodicRebroadcast();
+    });
+    
+    // Wait for peer connections
     try {
       await node.waitForPeers([Protocols.LightPush, Protocols.Filter]);
       connectionState.update((state) => ({
         ...state,
-        status: "connected",
+        status: "setting_up_subscriptions",
       }));
     } catch (error) {
       console.error("Error waiting for peers:", error);
-      connectionState.update((state) => ({
-        ...state,
-        error:
-          error instanceof Error ? error.message : "Failed to wait for peers",
-      }));
-      connectionState.update((state) => ({
-        ...state,
-        status: "error",
-      }));
-      throw error;
     }
 
+    // Set up subscriptions for message handling
     try {
-      // TODO: need to retry if failed
-      await subscribeToFilter(Topic.DevicePairing, async (message) => {
-        const error = topics[Topic.DevicePairing].protoType.verify(
-          message.payload
-        );
-        if (error) {
-          console.error("Error verifying device pairing message:", error);
-          return;
-        }
-        const devicePairingMessage = topics[
-          Topic.DevicePairing
-        ].protoType.decode(message.payload) as unknown as DevicePairingMessage;
-        console.log("Device pairing message:", devicePairingMessage);
-        const scannedPublicKeyBase64 =
-          devicePairingMessage.scannedPublicKeyBase64;
-        const success = await tokenStore.receiveDevicePairing(
-          {
-            nonce: decodeBase64(devicePairingMessage.nonceBase64),
-            ciphertext: decodeBase64(devicePairingMessage.ciphertextBase64),
-          },
-          devicePairingMessage.scannedPublicKeyBase64,
-          decodeBase64(devicePairingMessage.senderPublicKeyBase64)
-        );
-        if (success) {
-          toast.success("Device successfully paired!");
-
-          // If we're on the pairing page and the scanned key matches the one being displayed
-          const currentPath = window.location.pathname;
-          const displayedPublicKey = document
-            .getElementById("qrcode")
-            ?.getAttribute("data-public-key");
-
-          if (
-            currentPath === "/pairing" &&
-            displayedPublicKey === scannedPublicKeyBase64
-          ) {
-            // Navigate back to device list
-            goto("/");
-          }
-        } else {
-          toast.error("Failed to pair device. Please try again.");
-        }
-        // await wakuNode.send(Topic.Ack, {
-        //   ackId: devicePairingMessage.ackId,
-        //   success: true,
-        // });
-      });
+      await setupSubscriptions(wakuNode);
     } catch (error) {
-      console.error("Error subscribing for device pairing:", error);
+      console.error("Error setting up subscriptions:", error);
     }
+
+    connectionState.update((state) => ({
+      ...state,
+      status: "connected",
+    }));
   } catch (error) {
     console.error("Error starting Waku node:", error);
     connectionState.update((state) => ({
       ...state,
-      error:
-        error instanceof Error ? error.message : "Failed to start Waku node",
-    }));
-    connectionState.update((state) => ({
-      ...state,
       status: "error",
+      error: error instanceof Error ? error.message : String(error),
     }));
     throw error;
   }
 }
-
-export let subscription: ISubscription | undefined;
 
 export async function subscribeToFilter(
   topic: Topic,
@@ -176,9 +147,7 @@ export async function subscribeToFilter(
 
   const result = await node.filter.subscribe(
     [topics[topic].decoder],
-    (message) => {
-      callback(message);
-    },
+    callback,
     { forceUseAllPeers: false }
   );
 
@@ -186,9 +155,6 @@ export async function subscribeToFilter(
     console.error("Error subscribing to filter:", result.error);
     throw new Error("Failed to subscribe to filter");
   }
-
-  // At this point TypeScript knows we have a SubscriptionSuccess
-  subscription = result.subscription;
 
   if (
     result.results.failures.length > 0 ||
@@ -198,6 +164,8 @@ export async function subscribeToFilter(
       "Failed to subscribe to filter: No successful peer connections"
     );
   }
+
+  return result.subscription;
 }
 
 export function health(): HealthStatus {

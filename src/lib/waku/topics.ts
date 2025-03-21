@@ -33,24 +33,36 @@ const devicePairing = {
 };
 
 const ackContentTopic = "/waku-remote-control/1/ack/proto";
+export type AckMessage = {
+  ackId: string;
+  success: boolean;
+};
 const ackProto = new protobuf.Type("Ack")
   .add(new protobuf.Field("ackId", 1, "string"))
   .add(new protobuf.Field("success", 2, "bool"));
 
-export enum Topic {
-  DevicePairing,
-  // Ack,
-}
-
-type TopicData = {
-  [key in Topic]: {
-    contentTopic: string;
-    encoder: Encoder;
-    decoder: Decoder;
-    protoType: protobuf.Type;
-  };
+const ack = {
+  contentTopic: ackContentTopic,
+  encoder: createEncoder({
+    contentTopic: ackContentTopic,
+    pubsubTopicShardInfo: {
+      clusterId: 42,
+      shard: 0,
+    },
+  }),
+  decoder: createDecoder(ackContentTopic, {
+    clusterId: 42,
+    shard: 0,
+  }),
+  protoType: ackProto,
 };
 
-export const topics: TopicData = {
+export enum Topic {
+  DevicePairing,
+  Ack,
+}
+
+export const topics = {
   [Topic.DevicePairing]: devicePairing,
+  [Topic.Ack]: ack,
 };
