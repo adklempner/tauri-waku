@@ -74,12 +74,15 @@ class TokenStore {
   // Typically called from mobile after scanning the QR code from desktop
   // to generate a shared secret and store the credentials in the database
   async pairNewDevice(devicePubKeyBase64: string) : Promise<boolean> {
+    console.log(`Starting to pair new device with key: ${devicePubKeyBase64}`);
     const credential = await this.db.credentials.get(devicePubKeyBase64);
     if (credential) {
       console.log("Device already pairing");
       return false;
     }
     const { keyPair, sharedSecret, devicePublicKey, publicKeyBase64 } = createKeyPairAndSharedSecret(devicePubKeyBase64);
+    console.log(`Created key pair with publicKey: ${publicKeyBase64}`);
+    
     await this.db.credentials.put({
       privateKey: keyPair.privateKey,
       publicKey: keyPair.publicKey,
@@ -90,12 +93,22 @@ class TokenStore {
       paired: false,
       request: true,
     }, publicKeyBase64);
+    
+    console.log(`Stored credential with request flag for key: ${publicKeyBase64}`);
     await this.db.myKeyFromDeviceKey.put(publicKeyBase64, devicePubKeyBase64);
+    console.log(`Mapped ${publicKeyBase64} to device key ${devicePubKeyBase64}`);
+    
     return true;
   }
 
   async getPairing(publicKeyBase64: string): Promise<Credential | null> {
+    console.log(`Looking up credential for key: ${publicKeyBase64}`);
     const credential = await this.db.credentials.get(publicKeyBase64);
+    if (credential) {
+      console.log(`Found credential: paired=${credential.paired}, request=${credential.request}`);
+    } else {
+      console.log(`No credential found for key: ${publicKeyBase64}`);
+    }
     return credential || null;
   }
 
@@ -137,6 +150,21 @@ class TokenStore {
     await this.db.credentials.put(credential, myDeviceKeyBase64);
     await this.db.myKeyFromDeviceKey.put(myDeviceKeyBase64, scannedPublicKeyBase64);
     return true;
+  }
+
+  // Called to update a credential's paired status
+  async updatePairedStatus(publicKeyBase64: string, paired: boolean): Promise<boolean> {
+    try {
+      const updateCount = await this.db.credentials.update(publicKeyBase64, { paired });
+      if (updateCount === 0) {
+        console.error("Credential not found when updating paired status");
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error("Error updating credential paired status:", error);
+      return false;
+    }
   }
 }
 

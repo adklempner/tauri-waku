@@ -7,15 +7,29 @@
   import { wakuNode, pairingState } from "$lib/waku.svelte";
   import { encodeBase64 } from "@oslojs/encoding";
   import { goto } from "$app/navigation";
+  import { toast } from "svelte-sonner";
 
   let devicePubKeyBase64: string | null = $state(null);
   let html5QrcodeScanner: Html5QrcodeScanner | null = $state(null);
   let isPairing: boolean = $state(false);
   let isAwaitingResponse: boolean = $state(false);
+  let hasReceivedAck: boolean = $state(false);
 
   // Subscribe to the pairingState store 
   const unsubscribe = pairingState.subscribe(state => {
+    // Check if we were awaiting a response and now we're not (ack received)
+    const wasAwaiting = isAwaitingResponse;
     isAwaitingResponse = state.awaitingResponse && state.devicePubKey === devicePubKeyBase64;
+    
+    // If we received an ack for our pairing request
+    if (wasAwaiting && !isAwaitingResponse && devicePubKeyBase64 && !hasReceivedAck) {
+      hasReceivedAck = true; // Prevent multiple navigations
+      toast.success("Device successfully paired!");
+      // Navigate back to device list with a small delay to allow the toast to show
+      setTimeout(() => {
+        goto("/");
+      }, 1000);
+    }
   });
 
   // Clean up subscription when component is destroyed
@@ -65,15 +79,25 @@
       ciphertextBase64: encodeBase64(ciphertext),
       scannedPublicKeyBase64: devicePubKeyBase64,
     };
-    const ackId = await outbox.add(Topic.DevicePairing, message);
-    message.ackId = ackId;
     
     try {
-      // Send the message immediately, but rely on the outbox for reliability
-      await wakuNode.send(Topic.DevicePairing, message);
+      // First update the pairing state to indicate we're awaiting response
+      // This needs to happen before sending to ensure state is consistent
+      pairingState.update(state => ({
+        awaitingResponse: true,
+        devicePubKey: devicePubKeyBase64
+      }));
+      
+      // Add to outbox and immediately send the message
+      const ackId = await outbox.add(Topic.DevicePairing, message, true);
       console.log(`Sent pairing request with ID ${ackId}`);
     } catch (error) {
       console.error("Failed to send initial pairing request:", error);
+      // Reset pairing state since the request failed
+      pairingState.update(state => ({
+        awaitingResponse: false,
+        devicePubKey: null
+      }));
       // The message is already in the outbox and will be retried automatically
     }
   }
@@ -100,13 +124,17 @@
         />
       </div>
       <p class="text-gray-600 mt-4 text-lg font-medium">
-        <span class="animate-dots">
-          {#if isAwaitingResponse}
-            Awaiting Response . . .
-          {:else}
-            Sending Pair Request . . .
-          {/if}
-        </span>
+        {#if hasReceivedAck}
+          <span class="animate-success text-green-600 font-bold">Success!</span>
+        {:else}
+          <span class="animate-dots">
+            {#if isAwaitingResponse}
+              Awaiting Response . . .
+            {:else}
+              Sending Pair Request . . .
+            {/if}
+          </span>
+        {/if}
       </p>
     </div>
   {/if}
@@ -243,6 +271,17 @@
     100% {
       transform: scale(1.25) rotateY(360deg);
     }
+  }
+  
+  @keyframes successAnimation {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+  }
+  
+  .animate-success {
+    animation: successAnimation 1s infinite ease-in-out;
+    display: inline-block;
   }
   
   @keyframes dotAnimation {

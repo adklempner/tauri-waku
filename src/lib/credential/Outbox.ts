@@ -24,16 +24,31 @@ class Outbox extends Dexie {
     });
   }
 
-  async add(topic: Topic, message: any): Promise<string> {
+  async add(topic: Topic, message: any, sendNow: boolean = false): Promise<string> {
     const messageId = crypto.randomUUID();
     message.ackId = messageId;
-    await this.outbox.add({
+    
+    const outboxItem = {
         messageId,
         topic,
         message,
         ack: false, 
-    }, messageId);
+    };
+    
+    await this.outbox.add(outboxItem, messageId);
     console.log(`Added message to outbox with ID: ${messageId}`);
+    
+    // Immediately broadcast the message if requested
+    if (sendNow) {
+      try {
+        await wakuNode.send(topic, message);
+        console.log(`Immediately sent message ${messageId} for topic ${topic}`);
+      } catch (error) {
+        console.error(`Failed to immediately send message ${messageId}:`, error);
+        // The message is still in the outbox and will be retried by the rebroadcast mechanism
+      }
+    }
+    
     return messageId;
   }
 
@@ -87,6 +102,15 @@ class Outbox extends Dexie {
       }
     } catch (error) {
       console.error(`Error acknowledging message ${messageId}:`, error);
+    }
+  }
+
+  async getMessage(messageId: string): Promise<OutboxItem | undefined> {
+    try {
+      return await this.outbox.get(messageId);
+    } catch (error) {
+      console.error(`Error getting message ${messageId}:`, error);
+      return undefined;
     }
   }
 

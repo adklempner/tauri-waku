@@ -8,7 +8,7 @@ import {
   type PairingState,
 } from "$lib/waku.svelte";
 import { tokenStore } from "$lib/credential/TokenStore";
-import { decodeBase64 } from "@oslojs/encoding";
+import { decodeBase64, encodeBase64 } from "@oslojs/encoding";
 import { toast } from "svelte-sonner";
 import { goto } from "$app/navigation";
 import { WakuNode } from "$lib/waku.svelte";
@@ -94,6 +94,43 @@ export function ackCallback(wakuNode: WakuNode) {
     if (ackMessage.ackId && ackMessage.success) {
       // Mark the message as acknowledged in the outbox
       await outbox.ack(ackMessage.ackId);
+      
+      // Get the original message from the outbox to determine if this was a pairing message
+      const originalMessage = await outbox.getMessage(ackMessage.ackId);
+      
+      if (originalMessage && originalMessage.topic === Topic.DevicePairing) {
+        const devicePairingMessage = originalMessage.message as DevicePairingMessage;
+        
+        // If we were the sender of the DevicePairing message (i.e., we scanned the QR code)
+        // we need to update our credential to mark it as paired
+        if (devicePairingMessage.senderPublicKeyBase64 && devicePairingMessage.scannedPublicKeyBase64) {
+          try {
+            console.log("Received successful ack for our pairing request, updating credential");
+            
+            // Add a small delay to ensure credential creation is complete
+            // This helps with race conditions where the ack comes back very quickly
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Check if we have a credential for this scanned key
+            const credential = await tokenStore.getPairing(devicePairingMessage.senderPublicKeyBase64);
+            
+            if (credential && !credential.paired && credential.request) {
+              // Update the credential to mark it as paired
+              const success = await tokenStore.updatePairedStatus(devicePairingMessage.senderPublicKeyBase64, true);
+              
+              if (success) {
+                console.log("Updated credential to paired state");
+              } else {
+                console.error("Failed to update credential paired state");
+              }
+            } else {
+              console.log("No unpaired credential found or credential not marked as request", credential);
+            }
+          } catch (err) {
+            console.error("Error updating credential:", err);
+          }
+        }
+      }
       
       // Update the pairing state if this is a pairing-related acknowledgment
       pairingState.update(state => {

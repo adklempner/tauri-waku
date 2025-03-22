@@ -6,9 +6,11 @@
   import { Toaster } from 'svelte-sonner';
 </script>
 
-<div class="sm:mt-24 mt-0">
+<div class="fixed inset-0 overflow-hidden flex flex-col">
   <Header />
-  <slot />
+  <div class="flex-1 overflow-auto">
+    <slot />
+  </div>
 </div>
 
 <Toaster />
