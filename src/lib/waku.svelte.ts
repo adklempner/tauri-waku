@@ -2,17 +2,11 @@ import {
   createLightNode,
   DecodedMessage,
   type LightNode,
-  type ISubscription,
   Protocols,
   HealthStatus,
-  type SDKProtocolResult,
 } from "@waku/sdk";
-import { tokenStore } from "./credential/TokenStore";
 import { topics, Topic, type DevicePairingMessage } from "./waku/topics";
-import { decodeBase64 } from "@oslojs/encoding";
 import { writable, type Writable } from "svelte/store";
-import { toast } from "svelte-sonner";
-import { goto } from "$app/navigation";
 import { setupSubscriptions } from "./waku/filter.svelte";
 // Define the pairing state type
 export interface PairingState {
@@ -99,11 +93,6 @@ export async function startWaku(): Promise<void> {
     const { outbox } = await import('./credential/Outbox');
     outbox.startPeriodicRebroadcast();
     
-    // Add cleanup for when the app is closed
-    window.addEventListener('beforeunload', () => {
-      outbox.stopPeriodicRebroadcast();
-    });
-    
     // Wait for peer connections
     try {
       await node.waitForPeers([Protocols.LightPush, Protocols.Filter]);
@@ -126,6 +115,16 @@ export async function startWaku(): Promise<void> {
       ...state,
       status: "connected",
     }));
+
+    // Start periodic RAM usage monitoring
+    const { startPeriodicRamUsageMonitoring, stopPeriodicRamUsageMonitoring } = await import('./deviceinfo/sendDeviceInfo');
+    startPeriodicRamUsageMonitoring();
+    
+    // Add cleanup for when the app is closed
+    window.addEventListener('beforeunload', () => {
+      outbox.stopPeriodicRebroadcast();
+      stopPeriodicRamUsageMonitoring();
+    });
   } catch (error) {
     console.error("Error starting Waku node:", error);
     connectionState.update((state) => ({

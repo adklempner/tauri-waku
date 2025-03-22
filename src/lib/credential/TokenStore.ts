@@ -166,6 +166,18 @@ class TokenStore {
       return false;
     }
   }
+
+  async getPairedDevices() : Promise<Credential[]> {
+    return await this.db.credentials.toCollection().filter(cred => cred.paired).toArray();
+  }
+
+  async getMyPublicKey(devicePubKeyBase64: string) : Promise<string> {
+    const myPublicKeyBase64 = await this.db.myKeyFromDeviceKey.get(devicePubKeyBase64);
+    if (!myPublicKeyBase64) {
+      throw new Error("Device not paired");
+    }
+    return myPublicKeyBase64;
+  }
 }
 
 // Export singleton instance

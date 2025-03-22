@@ -4,7 +4,6 @@
   import PageLayout from "$lib/components/PageLayout.svelte";
   import CallToAction from "$lib/components/CallToAction.svelte";
   import { goto } from "$app/navigation";
-  
   // Redirect to devices page when connected
   $effect(() => {
     if ($connectionState.status === "connected") {

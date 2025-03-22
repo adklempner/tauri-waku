@@ -42,10 +42,13 @@ export function deriveSharedSecret(priv: Uint8Array, devicePubKey: Uint8Array) {
   return new Uint8Array(p256.getSharedSecret(priv, devicePubKey).slice(1));
 }
 
-export function encrypt(data: string, sharedSecret: Uint8Array) {
+export function encrypt(data: string | Uint8Array, sharedSecret: Uint8Array) {
+  if (typeof data === "string") {
+    data = utf8ToBytes(data);
+  }
   const nonce = randomBytes(12);
   const aes = gcm(sharedSecret, nonce);
-  const ciphertext = aes.encrypt(utf8ToBytes(data));
+  const ciphertext = aes.encrypt(data);
   return {
     nonce: new Uint8Array(nonce),
     ciphertext: new Uint8Array(ciphertext),

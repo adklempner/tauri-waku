@@ -17,6 +17,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@carbon/charts-svelte": "^1.22.18",
     "@lucide/svelte": "^0.483.0",
     "@noble/ciphers": "^1.2.1",
     "@noble/curves": "^1.8.1",
@@ -25,11 +26,14 @@
     "@tauri-apps/plugin-opener": "^2",
     "@waku/relay": "^0.0.16",
     "@waku/sdk": "^0.0.29",
+    "chart.js": "^4.4.8",
     "html5-qrcode": "^2.3.8",
     "identicon.js": "^2.3.3",
+    "layerchart": "^1.0.8",
     "protobufjs": "^7.4.0",
     "qrious": "^4.0.2",
-    "svelte-sonner": "^0.3.28"
+    "svelte-sonner": "^0.3.28",
+    "tauri-plugin-system-info-api": "^2.0.10"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.6",

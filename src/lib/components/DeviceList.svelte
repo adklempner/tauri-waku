@@ -49,6 +49,17 @@
   function navigateToPairingQR(deviceId: string) {
     goto(`/pairing?key=${encodeURIComponent(deviceId)}`);
   }
+  
+  function navigateToDeviceInfo(deviceId: string, event: MouseEvent) {
+    // Check if clicked on a button
+    const target = event.target as HTMLElement;
+    if (target.tagName === 'BUTTON' || target.closest('button')) {
+      // Let the button's own click handler handle it
+      return;
+    }
+    
+    goto(`/device-info?id=${encodeURIComponent(deviceId)}`);
+  }
 </script>
 
 {#if $devices?.length > 0}
@@ -69,7 +80,10 @@
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
         {#each $devices as device}
-          <tr class="hover:bg-gray-50 transition-colors">
+          <tr 
+            class="hover:bg-gray-50 transition-colors cursor-pointer"
+            on:click={(e) => navigateToDeviceInfo(device.id, e)}
+          >
             <td class="px-4 py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <img
