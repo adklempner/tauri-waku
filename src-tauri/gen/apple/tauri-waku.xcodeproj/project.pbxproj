@@ -28,7 +28,7 @@
 		1AF24EE8AB268BE0AA54B490 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
 		31B5ABE349FDA3C82B64FBF8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3986FDB6F71B07DC14844374 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
-		3B80ED321EA9000AC42D86FD /* tauri-waku.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "tauri-waku.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B80ED321EA9000AC42D86FD /* Waku Device Pairing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Waku Device Pairing.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		41B54B607E5D0E8D542218EF /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		4ABF05782B97A12A88A6BB9E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		56F373A26E89EDC7B4F6EABF /* tauri-waku_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "tauri-waku_iOS.entitlements"; sourceTree = "<group>"; };
@@ -115,7 +115,7 @@
 		DDA9F5EE1172840AD96E45E1 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3B80ED321EA9000AC42D86FD /* tauri-waku.app */,
+				3B80ED321EA9000AC42D86FD /* Waku Device Pairing.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -168,7 +168,7 @@
 			);
 			name = "tauri-waku_iOS";
 			productName = "tauri-waku_iOS";
-			productReference = 3B80ED321EA9000AC42D86FD /* tauri-waku.app */;
+			productReference = 3B80ED321EA9000AC42D86FD /* Waku Device Pairing.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -293,7 +293,7 @@
 					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.tauri-waku.app;
-				PRODUCT_NAME = "tauri-waku";
+				PRODUCT_NAME = "Waku Device Pairing";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = "arm64  arm64-sim";
@@ -409,7 +409,7 @@
 					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.tauri-waku.app;
-				PRODUCT_NAME = "tauri-waku";
+				PRODUCT_NAME = "Waku Device Pairing";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = "arm64  arm64-sim";

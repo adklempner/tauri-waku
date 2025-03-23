@@ -40,7 +40,11 @@
       return (await tokenStore.getDevices()).map((device) => {
         return {
           id: encodeBase64(device.publicKey),
-          status: device.paired ? "Paired" : device.request ? "Requested" : "Awaiting Scan",
+          status: device.paired
+            ? "Paired"
+            : device.request
+              ? "Requested"
+              : "Awaiting Scan",
         };
       });
     })
@@ -49,15 +53,15 @@
   function navigateToPairingQR(deviceId: string) {
     goto(`/pairing?key=${encodeURIComponent(deviceId)}`);
   }
-  
+
   function navigateToDeviceInfo(deviceId: string, event: MouseEvent) {
     // Check if clicked on a button
     const target = event.target as HTMLElement;
-    if (target.tagName === 'BUTTON' || target.closest('button')) {
+    if (target.tagName === "BUTTON" || target.closest("button")) {
       // Let the button's own click handler handle it
       return;
     }
-    
+
     goto(`/device-info?id=${encodeURIComponent(deviceId)}`);
   }
 </script>
@@ -67,22 +71,31 @@
     <table class="w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
         <tr>
-          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th
+            scope="col"
+            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+          >
             Device
           </th>
-          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th
+            scope="col"
+            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+          >
             Status
           </th>
-          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th
+            scope="col"
+            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+          >
             Actions
           </th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
         {#each $devices as device}
-          <tr 
+          <tr
             class="hover:bg-gray-50 transition-colors cursor-pointer"
-            on:click={(e) => navigateToDeviceInfo(device.id, e)}
+            onclick={(e) => navigateToDeviceInfo(device.id, e)}
           >
             <td class="px-4 py-4 whitespace-nowrap">
               <div class="flex items-center">
@@ -91,32 +104,44 @@
                   alt="Device icon"
                   class="h-8 w-8 rounded-full mr-3"
                 />
-                <span class="text-sm text-gray-700 font-medium truncate max-w-[100px]">
+                <span
+                  class="text-sm text-gray-700 font-medium truncate max-w-[100px]"
+                >
                   {device.id.substring(0, 8)}...
                 </span>
               </div>
             </td>
             <td class="px-4 py-4 whitespace-nowrap">
-              <span class={`px-2 py-1 text-xs font-medium rounded-full 
-                ${device.status === 'Paired' ? 'bg-green-100 text-green-800' : 
-                  device.status === 'Requested' ? 'bg-yellow-100 text-yellow-800' : 
-                  'bg-blue-100 text-blue-800'}`}>
+              <span
+                class={`px-2 py-1 text-xs font-medium rounded-full 
+                ${
+                  device.status === "Paired"
+                    ? "bg-green-100 text-green-800"
+                    : device.status === "Requested"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-blue-100 text-blue-800"
+                }`}
+              >
                 {device.status}
               </span>
             </td>
             <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
               {#if device.status === "Paired"}
-                <button class="py-1 px-3 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 transition-colors">
+                <button
+                  class="py-1 px-3 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 transition-colors"
+                >
                   Remove
                 </button>
               {:else if device.status === "Requested"}
-                <button class="py-1 px-3 bg-yellow-600 text-white text-sm font-medium rounded hover:bg-yellow-700 transition-colors">
+                <button
+                  class="py-1 px-3 bg-yellow-600 text-white text-sm font-medium rounded hover:bg-yellow-700 transition-colors"
+                >
                   Retry
                 </button>
               {:else if device.status === "Awaiting Scan"}
-                <button 
+                <button
                   class="py-1 px-3 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
-                  on:click={() => navigateToPairingQR(device.id)}
+                  onclick={() => navigateToPairingQR(device.id)}
                 >
                   Show QR
                 </button>

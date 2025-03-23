@@ -4,6 +4,7 @@ import {
   type LightNode,
   Protocols,
   HealthStatus,
+  HealthStatusChangeEvents,
 } from "@waku/sdk";
 import { topics, Topic, type DevicePairingMessage } from "./waku/topics";
 import { writable, type Writable } from "svelte/store";
@@ -146,8 +147,7 @@ export async function subscribeToFilter(
 
   const result = await node.filter.subscribe(
     [topics[topic].decoder],
-    callback,
-    { forceUseAllPeers: false }
+    callback
   );
 
   if (result.error) {
@@ -167,9 +167,20 @@ export async function subscribeToFilter(
   return result.subscription;
 }
 
-export function health(): HealthStatus {
+export function health(callback: (health: HealthStatus) => void): void {
   if (!node) {
-    return HealthStatus.Unhealthy;
+    return;
   }
-  return node.health.getHealthStatus();
+  node.health.addEventListener(HealthStatusChangeEvents.StatusChange, (health: CustomEvent<HealthStatus>) => {
+    callback(health.detail);
+  });
+}
+
+export function unregisterHealthListener(callback: (health: HealthStatus) => void): void {
+  if (!node) {
+    return;
+  }
+  node.health.removeEventListener(HealthStatusChangeEvents.StatusChange, (health: CustomEvent<HealthStatus>) => {
+    callback(health.detail);
+  });
 }

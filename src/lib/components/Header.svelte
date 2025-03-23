@@ -3,7 +3,7 @@
   import { connectionState, startWaku } from "../waku.svelte";
   import { HealthStatus } from "@waku/sdk";
   import ConnectionButton from "./ConnectionButton.svelte";
-  import { health } from "../waku.svelte";
+  import { health, unregisterHealthListener } from "../waku.svelte";
   import { page } from '$app/state';
   import { wakuConnection } from "../connectionUtils";
 
@@ -13,17 +13,18 @@
   let shouldShowConnectButton = $state(false);
 
   function startHealthCheck() {
-    healthStatus = health();
-    healthCheckInterval = setInterval(() => {
-      healthStatus = health();
-    }, 2000);
+     health((health: HealthStatus) => {
+      healthStatus = health;
+    });
+    // healthCheckInterval = setInterval(() => {
+    //   healthStatus = health();
+    // }, 2000);
   }
 
   function stopHealthCheck() {
-    if (healthCheckInterval) {
-      clearInterval(healthCheckInterval);
-      healthCheckInterval = undefined;
-    }
+    unregisterHealthListener((health: HealthStatus) => {
+      healthStatus = health;
+    });
   }
 
   $effect(() => {
@@ -85,7 +86,7 @@
   // Check if current route is not the home page
   $effect(() => {
     console.log("header: " + page.url.pathname);
-    isHomePage = page.url.pathname === "/";
+    isHomePage = page.url.pathname ? page.url.pathname === "/" : true;
     updateButtonVisibility();
   });
   

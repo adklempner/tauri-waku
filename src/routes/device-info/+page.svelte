@@ -9,10 +9,24 @@
   import { liveQuery, type Observable } from "dexie";
   let Identicon: any;
   import RamUsageChart2 from "$lib/components/RamUsageChart2.svelte";
+  import CallToAction from "$lib/components/CallToAction.svelte";
   // Get device ID from URL
   const deviceId = $derived($page.url.searchParams.get("id") || "");
   let ramUsageList: Observable<RamUsageItem[]> | undefined = $state();
   let lastUpdate: Observable<number | undefined> | undefined = $state();
+  let isUpdating = $state(false);
+  let previousLastUpdate = $state<number | undefined>(undefined);
+  // Animation trigger for lastUpdate changes
+  $effect(() => {
+    if ($lastUpdate && previousLastUpdate !== $lastUpdate) {
+      isUpdating = true;
+      previousLastUpdate = $lastUpdate;
+      setTimeout(() => {
+        isUpdating = false;
+      }, 1000); // Animation duration
+    }
+  });
+  
   onMount(async () => {
     const identiconModule = await import("identicon.js");
     Identicon = identiconModule.default;
@@ -148,6 +162,27 @@
   }
 </script>
 
+<style>
+  @keyframes pulse {
+    0% {
+      background-color: rgba(126, 213, 111, 0.7);
+      box-shadow: 0 0 0 0 rgba(126, 213, 111, 0.7);
+    }
+    70% {
+      background-color: rgba(126, 213, 111, 0);
+      box-shadow: 0 0 0 10px rgba(126, 213, 111, 0);
+    }
+    100% {
+      background-color: rgba(126, 213, 111, 0);
+      box-shadow: 0 0 0 0 rgba(126, 213, 111, 0);
+    }
+  }
+  
+  .update-pulse {
+    animation: pulse 1s ease-in-out;
+  }
+</style>
+
 <PageLayout title="Device Information" maxWidth="lg">
   {#if deviceData.id}
     <div class="bg-white rounded-lg overflow-hidden">
@@ -181,22 +216,14 @@
       <div class="p-6">
         <div class="mb-6">
           <h3 class="text-sm font-medium text-gray-500 mb-2">Last Update</h3>
-          <div class="bg-gray-50 p-3 rounded-md overflow-x-auto">
+          <div class={`bg-gray-50 p-3 rounded-md overflow-x-auto transition-all ${isUpdating ? 'update-pulse' : ''}`}>
             <code class="text-sm text-gray-800 break-all">
               {$lastUpdate ? new Date($lastUpdate).toLocaleString() : "N/A"}
             </code>   
           </div>
         </div>
 
-        {#if deviceData.status === "Paired"}
-          <div class="mt-6">
-            <button
-              class="py-2 px-4 bg-red-600 text-white font-medium rounded hover:bg-red-700 transition-colors w-full sm:w-auto"
-            >
-              Remove Device
-            </button>
-          </div>
-        {:else if deviceData.status === "Requested"}
+        {#if deviceData.status === "Requested"}
           <div class="mt-6">
             <button
               class="py-2 px-4 bg-yellow-600 text-white font-medium rounded hover:bg-yellow-700 transition-colors w-full sm:w-auto"
@@ -230,4 +257,9 @@
       </p>
     </div>
   {/if}
+  <CallToAction 
+    message="Back to devices?" 
+    linkText="Devices" 
+    linkHref="/devices" 
+  />
 </PageLayout>

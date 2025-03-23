@@ -10,7 +10,7 @@ configs:
 settingGroups:
   app:
     base:
-      PRODUCT_NAME: tauri-waku
+      PRODUCT_NAME: Waku Device Pairing
       PRODUCT_BUNDLE_IDENTIFIER: com.tauri-waku.app
 targetTemplates:
   app:

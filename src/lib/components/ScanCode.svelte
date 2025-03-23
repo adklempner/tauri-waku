@@ -1,52 +1,20 @@
 <script lang="ts">
   import { Html5QrcodeScanner, type Html5QrcodeResult } from "html5-qrcode";
-  import { onMount } from "svelte";
-  import { tokenStore } from "$lib/credential/TokenStore";
-  import { outbox } from "$lib/credential/Outbox";
-  import { Topic, type DevicePairingMessage } from "$lib/waku/topics";
-  import { wakuNode, pairingState } from "$lib/waku.svelte";
-  import { encodeBase64 } from "@oslojs/encoding";
-  import { goto } from "$app/navigation";
-  import { toast } from "svelte-sonner";
+  import { onMount, createEventDispatcher } from "svelte";
 
-  let devicePubKeyBase64: string | null = $state(null);
+  const dispatch = createEventDispatcher<{
+    scanSuccess: string;
+  }>();
+
   let html5QrcodeScanner: Html5QrcodeScanner | null = $state(null);
-  let isPairing: boolean = $state(false);
-  let isAwaitingResponse: boolean = $state(false);
-  let hasReceivedAck: boolean = $state(false);
-
-  // Subscribe to the pairingState store 
-  const unsubscribe = pairingState.subscribe(state => {
-    // Check if we were awaiting a response and now we're not (ack received)
-    const wasAwaiting = isAwaitingResponse;
-    isAwaitingResponse = state.awaitingResponse && state.devicePubKey === devicePubKeyBase64;
-    
-    // If we received an ack for our pairing request
-    if (wasAwaiting && !isAwaitingResponse && devicePubKeyBase64 && !hasReceivedAck) {
-      hasReceivedAck = true; // Prevent multiple navigations
-      toast.success("Device successfully paired!");
-      // Navigate back to device list with a small delay to allow the toast to show
-      setTimeout(() => {
-        goto("/");
-      }, 1000);
-    }
-  });
-
-  // Clean up subscription when component is destroyed
-  onMount(() => {
-    return () => {
-      unsubscribe();
-    };
-  });
 
   function onScanSuccess(
     decodedText: string,
     decodedResult: Html5QrcodeResult
   ) {
     console.log(`Code matched = ${decodedText}`, decodedResult);
-    devicePubKeyBase64 = decodedText;
     html5QrcodeScanner?.pause();
-    pairNewDevice();
+    dispatch('scanSuccess', decodedText);
   }
 
   function onScanFailure(error: string) {
@@ -55,52 +23,6 @@
     // console.warn(`Code scan error = ${error}`);
   }
 
-  async function pairNewDevice() {
-    if (!devicePubKeyBase64) {
-      return;
-    }
-    isPairing = true;
-    const success = await tokenStore.pairNewDevice(devicePubKeyBase64);
-    if (!success) {
-      goto("/");
-      return;
-    }
-    const {
-      myKey,
-      encryptedMessage: { nonce, ciphertext },
-    } = await tokenStore.encryptMessageForDevice(
-      devicePubKeyBase64,
-      devicePubKeyBase64
-    );
-    // add message to outbox for tracking and potential rebroadcasting
-    const message: Partial<DevicePairingMessage> = {
-      senderPublicKeyBase64: encodeBase64(myKey),
-      nonceBase64: encodeBase64(nonce),
-      ciphertextBase64: encodeBase64(ciphertext),
-      scannedPublicKeyBase64: devicePubKeyBase64,
-    };
-    
-    try {
-      // First update the pairing state to indicate we're awaiting response
-      // This needs to happen before sending to ensure state is consistent
-      pairingState.update(state => ({
-        awaitingResponse: true,
-        devicePubKey: devicePubKeyBase64
-      }));
-      
-      // Add to outbox and immediately send the message
-      const ackId = await outbox.add(Topic.DevicePairing, message, true);
-      console.log(`Sent pairing request with ID ${ackId}`);
-    } catch (error) {
-      console.error("Failed to send initial pairing request:", error);
-      // Reset pairing state since the request failed
-      pairingState.update(state => ({
-        awaitingResponse: false,
-        devicePubKey: null
-      }));
-      // The message is already in the outbox and will be retried automatically
-    }
-  }
   onMount(() => {
     html5QrcodeScanner = new Html5QrcodeScanner(
       "reader",
@@ -112,32 +34,7 @@
 </script>
 
 <div class="flex flex-col items-center">
-  {#if !devicePubKeyBase64}
-    <div id="reader"></div>
-  {:else}
-    <div class="flex flex-col items-center justify-center mt-4">
-      <div class="w-32 h-32 overflow-hidden flex items-center justify-center perspective-500">
-        <img 
-          src="/waku-mark-primary-black.svg" 
-          alt="Waku Logo" 
-          class="w-full h-full transform scale-125 animate-spin-y" 
-        />
-      </div>
-      <p class="text-gray-600 mt-4 text-lg font-medium">
-        {#if hasReceivedAck}
-          <span class="animate-success text-green-600 font-bold">Success!</span>
-        {:else}
-          <span class="animate-dots">
-            {#if isAwaitingResponse}
-              Awaiting Response . . .
-            {:else}
-              Sending Pair Request . . .
-            {/if}
-          </span>
-        {/if}
-      </p>
-    </div>
-  {/if}
+  <div id="reader"></div>
 </div>
 
 <style>
@@ -255,48 +152,5 @@
   :global(#reader__scan_region video) {
     max-width: 100% !important;
     border-radius: 0.25rem !important;
-  }
-  
-  .perspective-500 {
-    perspective: 500px;
-  }
-  
-  @keyframes spin-y {
-    0% {
-      transform: scale(1.25) rotateY(0deg);
-    }
-    50% {
-      transform: scale(1.25) rotateY(180deg);
-    }
-    100% {
-      transform: scale(1.25) rotateY(360deg);
-    }
-  }
-  
-  @keyframes successAnimation {
-    0% { transform: scale(1); opacity: 0.8; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(1); opacity: 0.8; }
-  }
-  
-  .animate-success {
-    animation: successAnimation 1s infinite ease-in-out;
-    display: inline-block;
-  }
-  
-  @keyframes dotAnimation {
-    0% { opacity: 0.3; }
-    50% { opacity: 1; }
-    100% { opacity: 0.3; }
-  }
-  
-  .animate-dots {
-    animation: dotAnimation 1.5s infinite ease-in-out;
-    display: inline-block;
-  }
-  
-  .animate-spin-y {
-    animation: spin-y 10s infinite linear;
-    transform-style: preserve-3d;
   }
 </style>

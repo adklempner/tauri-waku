@@ -12,8 +12,6 @@
     "core:resources:default",
     "core:image:default",
     "core:menu:default",
-    "core:tray:default",
-    "system-info:allow-all",
-    "system-info:allow-all-sys-info"
+    "core:tray:default"
   ]
 }

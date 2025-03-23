@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8D5079B259D71067A8617E5C"
-               BuildableName = "tauri-waku.app"
+               BuildableName = "Waku Device Pairing.app"
                BlueprintName = "tauri-waku_iOS"
                ReferencedContainer = "container:tauri-waku.xcodeproj">
             </BuildableReference>
@@ -31,7 +31,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8D5079B259D71067A8617E5C"
-            BuildableName = "tauri-waku.app"
+            BuildableName = "Waku Device Pairing.app"
             BlueprintName = "tauri-waku_iOS"
             ReferencedContainer = "container:tauri-waku.xcodeproj">
          </BuildableReference>
@@ -66,7 +66,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8D5079B259D71067A8617E5C"
-            BuildableName = "tauri-waku.app"
+            BuildableName = "Waku Device Pairing.app"
             BlueprintName = "tauri-waku_iOS"
             ReferencedContainer = "container:tauri-waku.xcodeproj">
          </BuildableReference>
@@ -95,7 +95,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8D5079B259D71067A8617E5C"
-            BuildableName = "tauri-waku.app"
+            BuildableName = "Waku Device Pairing.app"
             BlueprintName = "tauri-waku_iOS"
             ReferencedContainer = "container:tauri-waku.xcodeproj">
          </BuildableReference>
