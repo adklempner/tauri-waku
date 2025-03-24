@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { Html5QrcodeScanner, type Html5QrcodeResult } from "html5-qrcode";
+  import {
+    Html5QrcodeScanner,
+    type Html5QrcodeResult,
+    Html5QrcodeScannerState,
+  } from "html5-qrcode";
   import { onMount, createEventDispatcher } from "svelte";
 
   const dispatch = createEventDispatcher<{
@@ -13,8 +17,13 @@
     decodedResult: Html5QrcodeResult
   ) {
     console.log(`Code matched = ${decodedText}`, decodedResult);
-    html5QrcodeScanner?.pause();
-    dispatch('scanSuccess', decodedText);
+    if (
+      html5QrcodeScanner &&
+      html5QrcodeScanner.getState() === Html5QrcodeScannerState.SCANNING
+    ) {
+      html5QrcodeScanner.pause();
+    }
+    dispatch("scanSuccess", decodedText);
   }
 
   function onScanFailure(error: string) {

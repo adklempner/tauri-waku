@@ -4,16 +4,16 @@
   import { onMount } from "svelte";
   import { encodeBase64 } from "@oslojs/encoding";
   import { goto } from "$app/navigation";
-  let Identicon: any;
-
-  // Load identicon.js
+  import { getIdenticon } from "$lib/identicon.svelte";
+  let Identicon: any = $state(null);
   onMount(async () => {
-    const identiconModule = await import("identicon.js");
-    Identicon = identiconModule.default;
+    Identicon = await getIdenticon();
   });
 
   // Generate identicon data URL
   function generateIdenticon(messageId: string) {
+    console.log("Generating identicon for", messageId);
+    console.log("Identicon", Identicon);
     if (!Identicon) return "";
 
     // Convert the message ID to a hash if it's not already in the right format

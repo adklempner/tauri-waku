@@ -7,9 +7,10 @@
   import { decodeBase64 } from "@oslojs/encoding";
   import { deviceInfo, type RamUsageItem } from "$lib/deviceinfo/DeviceInfo";
   import { liveQuery, type Observable } from "dexie";
-  let Identicon: any;
   import RamUsageChart2 from "$lib/components/RamUsageChart2.svelte";
   import CallToAction from "$lib/components/CallToAction.svelte";
+  import { getIdenticon } from "$lib/identicon.svelte";
+  let Identicon: any = $state(null);
   // Get device ID from URL
   const deviceId = $derived($page.url.searchParams.get("id") || "");
   let ramUsageList: Observable<RamUsageItem[]> | undefined = $state();
@@ -28,8 +29,7 @@
   });
   
   onMount(async () => {
-    const identiconModule = await import("identicon.js");
-    Identicon = identiconModule.default;
+    Identicon = await getIdenticon();
     let deviceInfoReady = false;
     let tokenStoreReady = false;
 
@@ -140,6 +140,8 @@
 
   // Generate identicon data URL
   function generateIdenticon(messageId: string) {
+    console.log("Generating identicon for", messageId);
+    console.log("Identicon", Identicon);
     if (!Identicon) return "";
 
     // Convert the message ID to a hash if it's not already in the right format
